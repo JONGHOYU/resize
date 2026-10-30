@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Batch Image Resizer - 로컬 이미지 일괄 리사이저</title>
+  <meta name="description" content="서버 전송 없이 브라우저 메모리 내에서 안전하고 빠르게 동작하는 일괄 이미지 리사이저">
+  <!-- Google Fonts & Lucide Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- JSZip for zip packaging -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="glow-bg"></div>
+
+  <div class="app-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+            <circle cx="9" cy="9" r="2"/>
+            <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+          </svg>
+        </div>
+        <div>
+          <h1>PicResize <span>Pro</span></h1>
+          <p class="brand-sub">클라이언트 사이드 안전 일괄 이미지 리사이저</p>
+        </div>
+      </div>
+      <div class="security-badge">
+        <span class="badge-dot"></span>
+        <span>100% 로컬 브라우저 처리 (서버 전송 없음)</span>
+      </div>
+    </header>
+
+    <!-- Main Grid -->
+    <main class="main-layout">
+      <!-- Left Panel: Controls & Options -->
+      <aside class="panel settings-panel">
+        <div class="panel-header">
+          <h2>리사이즈 설정</h2>
+          <span class="subtitle">사이즈 조절 기준을 선택하세요</span>
+        </div>
+
+        <!-- Mode Selection -->
+        <div class="setting-group">
+          <label class="section-label">기준 축 선택</label>
+          <div class="mode-grid">
+            <label class="mode-card active" data-mode="long">
+              <input type="radio" name="resizeMode" value="long" checked>
+              <div class="mode-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 12H3M21 12l-4-4M21 12l-4 4M3 12l4-4M3 12l4 4"/>
+                </svg>
+              </div>
+              <div class="mode-text">
+                <div class="mode-title">긴축 기준</div>
+                <div class="mode-desc">가로/세로 중 긴 쪽</div>
+              </div>
+            </label>
+
+            <label class="mode-card" data-mode="short">
+              <input type="radio" name="resizeMode" value="short">
+              <div class="mode-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 21V3M12 21l-4-4M12 21l4-4M12 3l-4 4M12 3l4 4"/>
+                </svg>
+              </div>
+              <div class="mode-text">
+                <div class="mode-title">짧은축 기준</div>
+                <div class="mode-desc">가로/세로 중 짧은 쪽</div>
+              </div>
+            </label>
+
+            <label class="mode-card" data-mode="x">
+              <input type="radio" name="resizeMode" value="x">
+              <div class="mode-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect width="18" height="12" x="3" y="6" rx="2"/>
+                  <path d="M7 12h10M7 12l2-2M7 12l2 2M17 12l-2-2M17 12l-2 2"/>
+                </svg>
+              </div>
+              <div class="mode-text">
+                <div class="mode-title">X축 (너비) 기준</div>
+                <div class="mode-desc">가로 길이를 고정</div>
+              </div>
+            </label>
+
+            <label class="mode-card" data-mode="y">
+              <input type="radio" name="resizeMode" value="y">
+              <div class="mode-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect width="12" height="18" x="6" y="3" rx="2"/>
+                  <path d="M12 7v10M12 7l-2 2M12 7l2 2M12 17l-2-2M12 17l2 2"/>
+                </svg>
+              </div>
+              <div class="mode-text">
+                <div class="mode-title">Y축 (높이) 기준</div>
+                <div class="mode-desc">세로 길이를 고정</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Target Dimension Input -->
+        <div class="setting-group">
+          <div class="label-with-hint">
+            <label for="targetDimension" class="section-label" id="dimensionLabel">목표 긴축 크기 (px)</label>
+            <span class="hint-text">비율은 자동 유지됩니다</span>
+          </div>
+          <div class="input-wrapper">
+            <input type="number" id="targetDimension" value="1200" min="10" max="10000" step="10">
+            <span class="unit">px</span>
+          </div>
+          <div class="preset-chips">
+            <button type="button" class="chip" data-size="800">800px</button>
+            <button type="button" class="chip active" data-size="1200">1200px</button>
+            <button type="button" class="chip" data-size="1920">1920px (FHD)</button>
+            <button type="button" class="chip" data-size="2560">2560px (2K)</button>
+          </div>
+        </div>
+
+        <!-- Output Format & Quality -->
+        <div class="setting-group">
+          <label class="section-label">출력 파일 형식</label>
+          <div class="format-select-wrapper">
+            <select id="outputFormat">
+              <option value="original">원본 포맷 유지 (Keep Original)</option>
+              <option value="image/jpeg">JPEG (.jpg)</option>
+              <option value="image/png">PNG (.png)</option>
+              <option value="image/webp" selected>WebP (.webp) - 고효율 추천</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="setting-group" id="qualityGroup">
+          <div class="label-with-value">
+            <label for="qualityRange" class="section-label">이미지 품질</label>
+            <span id="qualityValue" class="value-badge">92%</span>
+          </div>
+          <input type="range" id="qualityRange" min="10" max="100" value="92">
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+          <button id="btnProcessAll" class="btn btn-primary" disabled>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+            </svg>
+            <span>일괄 리사이즈 실행</span>
+          </button>
+          <button id="btnDownloadZip" class="btn btn-secondary" disabled>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+            </svg>
+            <span>전체 일괄 다운로드 (ZIP)</span>
+          </button>
+        </div>
+      </aside>
+
+      <!-- Right Panel: Upload & Preview Section -->
+      <section class="panel content-panel">
+        <!-- Drag & Drop Zone -->
+        <div class="drop-zone" id="dropZone">
+          <input type="file" id="fileInput" multiple accept="image/*" class="file-input">
+          <div class="drop-icon">
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242M12 12v9M8 17l4-5 4 5"/>
+            </svg>
+          </div>
+          <h3>이미지 파일을 드래그하여 놓거나 클릭하여 추가하세요</h3>
+          <p>PNG, JPG, WebP, GIF, BMP, SVG 등 대용량 사진 다중 지원</p>
+          <div class="drop-btn-trigger">파일 찾아보기</div>
+        </div>
+
+        <!-- Toolbar above list -->
+        <div class="list-toolbar" id="listToolbar" style="display: none;">
+          <div class="toolbar-info">
+            <span class="count-badge" id="fileCountBadge">0개 파일</span>
+            <span class="status-summary" id="statusSummary">대기 중</span>
+          </div>
+          <div class="toolbar-actions">
+            <button id="btnClearAll" class="btn-sm btn-outline-danger">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+              모두 비우기
+            </button>
+          </div>
+        </div>
+
+        <!-- File List / Grid Container -->
+        <div class="items-container" id="itemsContainer">
+          <!-- Empty State -->
+          <div class="empty-state" id="emptyState">
+            <div class="empty-illustration">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+                <path d="m3 9 9 9 9-9"/>
+              </svg>
+            </div>
+            <p>업로드된 이미지가 없습니다.<br>위 영역에 이미지를 끌어다 놓아보세요!</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>💡 모든 이미지 변환 연산은 사용자의 웹 브라우저(Canvas API & Web Workers) 내에서 100% 로컬로 실행되며 네트워크로 전송되지 않습니다.</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
